@@ -36,7 +36,8 @@ int curdata = 0;
 int stepsdone = 0;
 
 void printstate() {
-  fprintf(stderr, "--- %d steps done ---\n", stepsdone++);
+  const char *plural = (stepsdone == 1 ? "" : "s");
+  fprintf(stderr, "--- %d step%s done ---\n", stepsdone++, plural);
   fprintf(stderr, "Source point:\n");
   for (int i = 0; i < srclen; ++i) fputc(src[i], stderr);
   fprintf(stderr, "\n");
@@ -48,7 +49,7 @@ void printstate() {
     fprintf(stderr, i ? ", " : "  ");
     fprintf(stderr, "%3d", data[i]);
   }
-  fprintf(stderr, "\n");
+  fprintf(stderr, ", ... \n");
   if (curdata < numdata) {
     for (int i = 0; i < curdata; ++i) {
       fprintf(stderr, "     ");
@@ -66,6 +67,10 @@ void printstate() {
 
 void readfile(char *filename) {
   FILE *fp = fopen(filename, "r");
+  if (fp == NULL) {
+    printf("Couldn't open file '%s'\n", filename);
+    exit(1);
+  }
   int c;
   while ((c = fgetc(fp)) != EOF) {
     if (strchr("+-<>,.[]", c)) src[srclen++] = c;
@@ -133,13 +138,20 @@ int step(int debugmode) {
 int main(int argc, char **argv) {
   if (argc < 2) {
     printf("Usage:\n");
-    printf(" %s <bf_filename>\t\t\tExecute <bf_filename>\n", argv[0]);
-    printf(" %s -d <bf_filename>\t\t\tExecute with debug info on stderr\n", argv[0]);
+    printf(" %s <bf_filename>\t\tExecute <bf_filename>\n", argv[0]);
+    printf(" %s -d <bf_filename>\t\tExecute with debug info on stderr\n", argv[0]);
     exit(2);
   }
-  int debugmode = (strcmp(argv[1], "-d") == 0);
+  int debugmode = 0;
+  char *filename = argv[1];
+
+  if (strcmp(argv[1], "-d") == 0) {
+    debugmode = 1;
+    filename = argv[2];
+  }
+
   memset(data, 0, sizeof(data));
-  readfile(argv[1]);
+  readfile(filename);
   while (step(debugmode));
 
   return 0;
